@@ -118,7 +118,11 @@ void HttpsMethod::SetupProxy()  					/*{{{*/
 
    if (UseProxy.empty() == true)
    {
-      UseProxy = "socks5h://localhost:9050";
+      // Default proxy
+      // - socks5h (actually ignored below) - use proxy for DNS resolution
+      // - apt:apt@ - dummy socks authentication (for IsolateSOCKSAuth in Tor)
+      // - localhost:9050 - default Tor SOCKS port
+      UseProxy = "socks5h://apt:apt@localhost:9050";
    }
 
    // Determine what host and port to use based on the proxy settings

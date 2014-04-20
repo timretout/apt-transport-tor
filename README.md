@@ -42,6 +42,28 @@ mirror, you can use that:
     deb     tor://<long string>.onion/debian unstable main
     deb-src tor://<long string>.onion/debian unstable main
 
+## Configuration
+
+Most users should not need to adjust SOCKS settings.
+
+By default, apt-transport-tor uses the following SOCKS proxy setting, which
+matches the default Tor SOCKS port:
+
+    socks5h://apt:apt@localhost:9050
+
+If you want to use a different port, you can edit the Acquire::tor::proxy
+apt preference:
+
+    Acquire::tor::proxy "socks5h://apt:apt@localhost:9050";
+
+Note the use of a username/password to make use of the default
+IsolateSOCKSAuth Tor setting for stream isolation, which requires bug fixes
+from Tor 0.2.4.19 to work well.  This means your apt traffic will be sent
+over a different circuit from your regular Tor traffic.
+
+Although "sock5h://" is put explicitly in these examples, at the moment its
+use is hardcoded (to avoid DNS leaks).
+
 ## Caveats
 
 Downloading your Debian packages over Tor prevents an attacker who is
