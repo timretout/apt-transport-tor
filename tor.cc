@@ -3,7 +3,7 @@
 // $Id: http.cc,v 1.59 2004/05/08 19:42:35 mdz Exp $
 /* ######################################################################
 
-   HTTPS Acquire Method - This is the HTTPS acquire method for APT.
+   Tor Acquire Method - This is the Tor acquire method for APT.
    
    It uses libcurl
 
@@ -37,10 +37,10 @@
 using namespace std;
 
 size_t
-HttpsMethod::parse_header(void *buffer, size_t size, size_t nmemb, void *userp)
+TorMethod::parse_header(void *buffer, size_t size, size_t nmemb, void *userp)
 {
    size_t len = size * nmemb;
-   HttpsMethod *me = (HttpsMethod *)userp;
+   TorMethod *me = (TorMethod *)userp;
    std::string line((char*) buffer, len);
    for (--len; len > 0; --len)
       if (isspace(line[len]) == 0)
@@ -72,9 +72,9 @@ HttpsMethod::parse_header(void *buffer, size_t size, size_t nmemb, void *userp)
 }
 
 size_t 
-HttpsMethod::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
+TorMethod::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 {
-   HttpsMethod *me = (HttpsMethod *)userp;
+   TorMethod *me = (TorMethod *)userp;
 
    if (me->Res.Size == 0)
       me->URIStart(me->Res);
@@ -85,25 +85,25 @@ HttpsMethod::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 }
 
 int
-HttpsMethod::progress_callback(void *clientp, double dltotal, double /*dlnow*/,
+TorMethod::progress_callback(void *clientp, double dltotal, double /*dlnow*/,
 			      double /*ultotal*/, double /*ulnow*/)
 {
-   HttpsMethod *me = (HttpsMethod *)clientp;
+   TorMethod *me = (TorMethod *)clientp;
    if(dltotal > 0 && me->Res.Size == 0) {
       me->Res.Size = (unsigned long long)dltotal;
    }
    return 0;
 }
 
-// HttpsServerState::HttpsServerState - Constructor			/*{{{*/
-HttpsServerState::HttpsServerState(URI Srv,HttpsMethod * /*Owner*/) : ServerState(Srv, NULL)
+// TorServerState::TorServerState - Constructor			/*{{{*/
+TorServerState::TorServerState(URI Srv,TorMethod * /*Owner*/) : ServerState(Srv, NULL)
 {
-   TimeOut = _config->FindI("Acquire::https::Timeout",TimeOut);
+   TimeOut = _config->FindI("Acquire::tor::Timeout",TimeOut);
    Reset();
 }
 									/*}}}*/
 
-void HttpsMethod::SetupProxy()  					/*{{{*/
+void TorMethod::SetupProxy()  					/*{{{*/
 {
    URI ServerName = Queue->Uri;
 
@@ -113,7 +113,7 @@ void HttpsMethod::SetupProxy()  					/*{{{*/
    // no-proxy ("DIRECT") setting in apt.conf.
    curl_easy_setopt(curl, CURLOPT_PROXY, "");
 
-   // Determine the proxy setting - try https first, fallback to http and use env at last
+   // Determine the proxy setting
    string UseProxy = _config->Find("Acquire::tor::Proxy", _config->Find("Acquire::tor::Proxy").c_str());
 
    if (UseProxy.empty() == true)
@@ -139,11 +139,11 @@ void HttpsMethod::SetupProxy()  					/*{{{*/
    // Set proxy type to SOCKS5, and let proxy do DNS resolution
    curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5_HOSTNAME);
 }									/*}}}*/
-// HttpsMethod::Fetch - Fetch an item					/*{{{*/
+// TorMethod::Fetch - Fetch an item					/*{{{*/
 // ---------------------------------------------------------------------
 /* This adds an item to the pipeline. We keep the pipeline at a fixed
    depth. */
-bool HttpsMethod::Fetch(FetchItem *Itm)
+bool TorMethod::Fetch(FetchItem *Itm)
 {
    struct stat SBuf;
    struct curl_slist *headers=NULL;  
@@ -175,83 +175,20 @@ bool HttpsMethod::Fetch(FetchItem *Itm)
    // options
    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, false);
    curl_easy_setopt(curl, CURLOPT_FILETIME, true);
-   // only allow curl to handle https, not the other stuff it supports
-   //curl_easy_setopt(curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
-   //curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTPS);
-
-   // SSL parameters are set by default to the common (non mirror-specific) value
-   // if available (or a default one) and gets overload by mirror-specific ones.
-
-   // File containing the list of trusted CA.
-   string cainfo = _config->Find("Acquire::https::CaInfo","");
-   string knob = "Acquire::https::"+remotehost+"::CaInfo";
-   cainfo = _config->Find(knob.c_str(),cainfo.c_str());
-   if(cainfo.empty() == false)
-      curl_easy_setopt(curl, CURLOPT_CAINFO,cainfo.c_str());
-
-   // Check server certificate against previous CA list ...
-   bool peer_verify = _config->FindB("Acquire::https::Verify-Peer",true);
-   knob = "Acquire::https::" + remotehost + "::Verify-Peer";
-   peer_verify = _config->FindB(knob.c_str(), peer_verify);
-   curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, peer_verify);
-
-   // ... and hostname against cert CN or subjectAltName
-   bool verify = _config->FindB("Acquire::https::Verify-Host",true);
-   knob = "Acquire::https::"+remotehost+"::Verify-Host";
-   verify = _config->FindB(knob.c_str(),verify);
-   int const default_verify = (verify == true) ? 2 : 0;
-   curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, default_verify);
-
-   // Also enforce issuer of server certificate using its cert
-   string issuercert = _config->Find("Acquire::https::IssuerCert","");
-   knob = "Acquire::https::"+remotehost+"::IssuerCert";
-   issuercert = _config->Find(knob.c_str(),issuercert.c_str());
-   if(issuercert.empty() == false)
-      curl_easy_setopt(curl, CURLOPT_ISSUERCERT,issuercert.c_str());
-
-   // For client authentication, certificate file ...
-   string pem = _config->Find("Acquire::https::SslCert","");
-   knob = "Acquire::https::"+remotehost+"::SslCert";
-   pem = _config->Find(knob.c_str(),pem.c_str());
-   if(pem.empty() == false)
-      curl_easy_setopt(curl, CURLOPT_SSLCERT, pem.c_str());
-
-   // ... and associated key.
-   string key = _config->Find("Acquire::https::SslKey","");
-   knob = "Acquire::https::"+remotehost+"::SslKey";
-   key = _config->Find(knob.c_str(),key.c_str());
-   if(key.empty() == false)
-      curl_easy_setopt(curl, CURLOPT_SSLKEY, key.c_str());
-
-   // Allow forcing SSL version to SSLv3 or TLSv1 (SSLv2 is not
-   // supported by GnuTLS).
-   long final_version = CURL_SSLVERSION_DEFAULT;
-   string sslversion = _config->Find("Acquire::https::SslForceVersion","");
-   knob = "Acquire::https::"+remotehost+"::SslForceVersion";
-   sslversion = _config->Find(knob.c_str(),sslversion.c_str());
-   if(sslversion == "TLSv1")
-     final_version = CURL_SSLVERSION_TLSv1;
-   else if(sslversion == "SSLv3")
-     final_version = CURL_SSLVERSION_SSLv3;
-   curl_easy_setopt(curl, CURLOPT_SSLVERSION, final_version);
-
-   // CRL file
-   string crlfile = _config->Find("Acquire::https::CrlFile","");
-   knob = "Acquire::https::"+remotehost+"::CrlFile";
-   crlfile = _config->Find(knob.c_str(),crlfile.c_str());
-   if(crlfile.empty() == false)
-      curl_easy_setopt(curl, CURLOPT_CRLFILE, crlfile.c_str());
+   // only allow curl to handle http, not the other stuff it supports
+   curl_easy_setopt(curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTP);
+   curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP);
 
    // cache-control
-   if(_config->FindB("Acquire::https::No-Cache",
+   if(_config->FindB("Acquire::tor::No-Cache",
 	_config->FindB("Acquire::http::No-Cache",false)) == false)
    {
       // cache enabled
-      if (_config->FindB("Acquire::https::No-Store",
+      if (_config->FindB("Acquire::tor::No-Store",
 		_config->FindB("Acquire::http::No-Store",false)) == true)
 	 headers = curl_slist_append(headers,"Cache-Control: no-store");
       stringstream ss;
-      ioprintf(ss, "Cache-Control: max-age=%u", _config->FindI("Acquire::https::Max-Age",
+      ioprintf(ss, "Cache-Control: max-age=%u", _config->FindI("Acquire::tor::Max-Age",
 		_config->FindI("Acquire::http::Max-Age",0)));
       headers = curl_slist_append(headers, ss.str().c_str());
    } else {
@@ -262,19 +199,19 @@ bool HttpsMethod::Fetch(FetchItem *Itm)
    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
    // speed limit
-   int const dlLimit = _config->FindI("Acquire::https::Dl-Limit",
+   int const dlLimit = _config->FindI("Acquire::tor::Dl-Limit",
 		_config->FindI("Acquire::http::Dl-Limit",0))*1024;
    if (dlLimit > 0)
       curl_easy_setopt(curl, CURLOPT_MAX_RECV_SPEED_LARGE, dlLimit);
 
    // set header
    curl_easy_setopt(curl, CURLOPT_USERAGENT,
-	_config->Find("Acquire::https::User-Agent",
+	_config->Find("Acquire::tor::User-Agent",
 		_config->Find("Acquire::http::User-Agent",
 			"Debian APT-CURL/1.0 (" PACKAGE_VERSION ")").c_str()).c_str());
 
    // set timeout
-   int const timeout = _config->FindI("Acquire::https::Timeout",
+   int const timeout = _config->FindI("Acquire::tor::Timeout",
 		_config->FindI("Acquire::http::Timeout",120));
    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, timeout);
    //set really low lowspeed timeout (see #497983)
@@ -282,13 +219,13 @@ bool HttpsMethod::Fetch(FetchItem *Itm)
    curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, timeout);
 
    // set redirect options and default to 10 redirects
-   bool const AllowRedirect = _config->FindB("Acquire::https::AllowRedirect",
+   bool const AllowRedirect = _config->FindB("Acquire::tor::AllowRedirect",
 	_config->FindB("Acquire::http::AllowRedirect",true));
    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, AllowRedirect);
    curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 10);
 
    // debug
-   if(_config->FindB("Debug::Acquire::https", false))
+   if(_config->FindB("Debug::Acquire::tor", false))
       curl_easy_setopt(curl, CURLOPT_VERBOSE, true);
 
    // error handling
@@ -300,7 +237,7 @@ bool HttpsMethod::Fetch(FetchItem *Itm)
    // see 657029, 657560 and co, so if we have no extension on the request
    // ask for text only. As a sidenote: If there is nothing to negotate servers
    // seem to be nice and ignore it.
-   if (_config->FindB("Acquire::https::SendAccept", _config->FindB("Acquire::http::SendAccept", true)) == true)
+   if (_config->FindB("Acquire::tor::SendAccept", _config->FindB("Acquire::http::SendAccept", true)) == true)
    {
       size_t const filepos = Itm->Uri.find_last_of('/');
       string const file = Itm->Uri.substr(filepos + 1);
@@ -325,7 +262,7 @@ bool HttpsMethod::Fetch(FetchItem *Itm)
 
    // go for it - if the file exists, append on it
    File = new FileFd(Itm->DestFile, FileFd::WriteAny);
-   Server = new HttpsServerState(Itm->Uri, this);
+   Server = new TorServerState(Itm->Uri, this);
 
    // keep apt updated
    Res.Filename = Itm->DestFile;
@@ -425,8 +362,8 @@ int main()
 {
    setlocale(LC_ALL, "");
 
-   HttpsMethod Mth;
-   curl_global_init(CURL_GLOBAL_SSL) ;
+   TorMethod Mth;
+   curl_global_init(CURL_GLOBAL_NOTHING) ;
 
    return Mth.Run();
 }

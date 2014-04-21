@@ -8,8 +8,8 @@
    ##################################################################### */
 									/*}}}*/
 
-#ifndef APT_HTTPS_H
-#define APT_HTTPS_H
+#ifndef APT_TOR_H
+#define APT_TOR_H
 
 #include <apt-pkg/acquire-method.h>
 
@@ -24,10 +24,10 @@ using std::cout;
 using std::endl;
 
 class Hashes;
-class HttpsMethod;
+class TorMethod;
 class FileFd;
 
-class HttpsServerState : public ServerState
+class TorServerState : public ServerState
 {
    protected:
    virtual bool ReadHeaderLines(std::string &/*Data*/) { return false; }
@@ -48,11 +48,11 @@ class HttpsServerState : public ServerState
    virtual bool Flush(FileFd * const /*File*/) { return false; }
    virtual bool Go(bool /*ToFile*/, FileFd * const /*File*/) { return false; }
 
-   HttpsServerState(URI Srv, HttpsMethod *Owner);
-   virtual ~HttpsServerState() {Close();};
+   TorServerState(URI Srv, TorMethod *Owner);
+   virtual ~TorServerState() {Close();};
 };
 
-class HttpsMethod : public pkgAcqMethod
+class TorMethod : public pkgAcqMethod
 {
    // minimum speed in bytes/se that triggers download timeout handling
    static const int DL_MIN_SPEED = 10;
@@ -65,18 +65,18 @@ class HttpsMethod : public pkgAcqMethod
    void SetupProxy();
    CURL *curl;
    FetchResult Res;
-   HttpsServerState *Server;
+   TorServerState *Server;
 
    public:
    FileFd *File;
       
-   HttpsMethod() : pkgAcqMethod("1.2",Pipeline | SendConfig), File(NULL)
+   TorMethod() : pkgAcqMethod("1.2",Pipeline | SendConfig), File(NULL)
    {
       File = 0;
       curl = curl_easy_init();
    };
 
-   ~HttpsMethod()
+   ~TorMethod()
    {
       curl_easy_cleanup(curl);
    };
