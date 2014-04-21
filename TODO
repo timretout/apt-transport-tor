@@ -1,0 +1,6 @@
+TODO
+====
+
+- Fix i18n properly
+- Steal some tests from apt
+- Look at support.cc - can libcurl do more parsing than this?
