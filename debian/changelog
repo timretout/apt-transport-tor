@@ -1,0 +1,5 @@
+apt-transport-tor (0.1.1-1) unstable; urgency=medium
+
+  * Initial release. (Closes: #745259)
+
+ -- Tim Retout <diocles@debian.org>  Mon, 21 Apr 2014 20:20:00 +0100

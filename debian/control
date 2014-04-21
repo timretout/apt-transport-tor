@@ -1,0 +1,21 @@
+Source: apt-transport-tor
+Section: admin
+Priority: optional
+Maintainer: Tim Retout <diocles@debian.org>
+Build-Depends: debhelper (>= 9), dh-autoreconf, libapt-pkg-dev, libcurl4-gnutls-dev
+Standards-Version: 3.9.5.0
+Homepage: https://github.com/diocles/apt-transport-tor
+
+Package: apt-transport-tor
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, tor
+Description: APT transport for anonymous package downloads via Tor
+ Provides support in APT for downloading packages anonymously via the Tor
+ network.
+ .
+ APT already includes mechanisms for guaranteeing the authenticity of the
+ packages you download.  However, an adversary sniffing your network traffic
+ can still see what software you are installing.
+ .
+ Install apt-transport-tor, edit your sources.list to include only tor://
+ URLs, and you can "apt-get install anarchism" without fear of reprisals.
