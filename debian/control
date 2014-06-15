@@ -18,4 +18,11 @@ Description: APT transport for anonymous package downloads via Tor
  can still see what software you are installing.
  .
  Install apt-transport-tor, edit your sources.list to include only tor://
- URLs, and you can "apt-get install anarchism" without fear of reprisals.
+ URLs, and you can make it very difficult for anyone intercepting your
+ network traffic to be able to tell that you are installing Debian packages,
+ or which packages you are installing.
+ .
+ Please note that this approach is only as secure as Tor itself - this
+ software cannot protect you from an attacker who has access to your local
+ machine.  In addition, attackers may be able to correlate your network
+ traffic with the packets coming out of an exit node, so do be careful.

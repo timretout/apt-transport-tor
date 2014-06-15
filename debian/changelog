@@ -1,3 +1,10 @@
+apt-transport-tor (0.1.1-2) unstable; urgency=medium
+
+  * debian/control: Update description to give less of a false sense
+    of security.  (Closes: #746773)
+
+ -- Tim Retout <diocles@debian.org>  Sun, 15 Jun 2014 17:29:51 +0100
+
 apt-transport-tor (0.1.1-1) unstable; urgency=medium
 
   * Initial release. (Closes: #745259)
