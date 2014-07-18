@@ -205,10 +205,9 @@ bool TorMethod::Fetch(FetchItem *Itm)
       curl_easy_setopt(curl, CURLOPT_MAX_RECV_SPEED_LARGE, dlLimit);
 
    // set header
+   // Hardcoded so that all apt-transport-tor users look the same.
    curl_easy_setopt(curl, CURLOPT_USERAGENT,
-	_config->Find("Acquire::tor::User-Agent",
-		_config->Find("Acquire::http::User-Agent",
-			"Debian APT-CURL/1.0 (" PACKAGE_VERSION ")").c_str()).c_str());
+			"Debian APT-CURL/1.0 (0.1)");
 
    // set timeout
    int const timeout = _config->FindI("Acquire::tor::Timeout",
