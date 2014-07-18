@@ -183,9 +183,72 @@ bool TorMethod::Fetch(FetchItem *Itm)
    // options
    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, false);
    curl_easy_setopt(curl, CURLOPT_FILETIME, true);
-   // only allow curl to handle http, not the other stuff it supports
-   curl_easy_setopt(curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTP);
-   curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP);
+   // Allow curl to handle just the protocols we want
+   curl_easy_setopt(curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+   curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+
+   // SSL parameters are set by default to the common (non mirror-specific) value
+   // if available (or a default one) and gets overload by mirror-specific ones.
+
+   // File containing the list of trusted CA.
+   string cainfo = _config->Find("Acquire::https::CaInfo","");
+   string knob = "Acquire::https::"+remotehost+"::CaInfo";
+   cainfo = _config->Find(knob.c_str(),cainfo.c_str());
+   if(cainfo.empty() == false)
+      curl_easy_setopt(curl, CURLOPT_CAINFO,cainfo.c_str());
+
+   // Check server certificate against previous CA list ...
+   bool peer_verify = _config->FindB("Acquire::https::Verify-Peer",true);
+   knob = "Acquire::https::" + remotehost + "::Verify-Peer";
+   peer_verify = _config->FindB(knob.c_str(), peer_verify);
+   curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, peer_verify);
+
+   // ... and hostname against cert CN or subjectAltName
+   bool verify = _config->FindB("Acquire::https::Verify-Host",true);
+   knob = "Acquire::https::"+remotehost+"::Verify-Host";
+   verify = _config->FindB(knob.c_str(),verify);
+   int const default_verify = (verify == true) ? 2 : 0;
+   curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, default_verify);
+
+   // Also enforce issuer of server certificate using its cert
+   string issuercert = _config->Find("Acquire::https::IssuerCert","");
+   knob = "Acquire::https::"+remotehost+"::IssuerCert";
+   issuercert = _config->Find(knob.c_str(),issuercert.c_str());
+   if(issuercert.empty() == false)
+      curl_easy_setopt(curl, CURLOPT_ISSUERCERT,issuercert.c_str());
+
+   // For client authentication, certificate file ...
+   string pem = _config->Find("Acquire::https::SslCert","");
+   knob = "Acquire::https::"+remotehost+"::SslCert";
+   pem = _config->Find(knob.c_str(),pem.c_str());
+   if(pem.empty() == false)
+      curl_easy_setopt(curl, CURLOPT_SSLCERT, pem.c_str());
+
+   // ... and associated key.
+   string key = _config->Find("Acquire::https::SslKey","");
+   knob = "Acquire::https::"+remotehost+"::SslKey";
+   key = _config->Find(knob.c_str(),key.c_str());
+   if(key.empty() == false)
+      curl_easy_setopt(curl, CURLOPT_SSLKEY, key.c_str());
+
+   // Allow forcing SSL version to SSLv3 or TLSv1 (SSLv2 is not
+   // supported by GnuTLS).
+   long final_version = CURL_SSLVERSION_DEFAULT;
+   string sslversion = _config->Find("Acquire::https::SslForceVersion","");
+   knob = "Acquire::https::"+remotehost+"::SslForceVersion";
+   sslversion = _config->Find(knob.c_str(),sslversion.c_str());
+   if(sslversion == "TLSv1")
+     final_version = CURL_SSLVERSION_TLSv1;
+   else if(sslversion == "SSLv3")
+     final_version = CURL_SSLVERSION_SSLv3;
+   curl_easy_setopt(curl, CURLOPT_SSLVERSION, final_version);
+
+   // CRL file
+   string crlfile = _config->Find("Acquire::https::CrlFile","");
+   knob = "Acquire::https::"+remotehost+"::CrlFile";
+   crlfile = _config->Find(knob.c_str(),crlfile.c_str());
+   if(crlfile.empty() == false)
+      curl_easy_setopt(curl, CURLOPT_CRLFILE, crlfile.c_str());
 
    // cache-control
    if(_config->FindB("Acquire::tor::No-Cache",
@@ -370,7 +433,7 @@ int main()
    setlocale(LC_ALL, "");
 
    TorMethod Mth;
-   curl_global_init(CURL_GLOBAL_NOTHING) ;
+   curl_global_init(CURL_GLOBAL_SSL) ;
 
    return Mth.Run();
 }
