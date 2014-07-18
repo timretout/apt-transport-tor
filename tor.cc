@@ -151,8 +151,16 @@ bool TorMethod::Fetch(FetchItem *Itm)
    URI Uri = Itm->Uri;
    string remotehost = Uri.Host;
 
-   // Undo the "tor" at the start
-   Uri.Access = "http";
+   // Undo any "tor" or "tor+" at the start
+   string prefix="tor+";
+   if ("tor" == Uri.Access)
+   {
+        Uri.Access = "http";
+   }
+   else if (!Uri.Access.compare(0, prefix.size(), prefix))
+   {
+        Uri.Access = Uri.Access.substr(prefix.size());
+   }
 
    // TODO:
    //       - http::Pipeline-Depth
