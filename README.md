@@ -3,7 +3,7 @@
 Easily install Debian packages via Tor.
 
 This package implements an APT "acquire method" that handles URLs starting
-with "tor://" in your sources.list.
+with "tor+http://" or "tor+https://" in your sources.list.
 
 ## Installation
 
@@ -30,8 +30,8 @@ Then, or if installing from a tarball:
 Edit your /etc/apt/sources.list like so, adjusting the suite/components
 appropriately for your system:
 
-    deb     tor://http.debian.net/debian unstable main
-    deb-src tor://http.debian.net/debian unstable main
+    deb     tor+http://http.debian.net/debian unstable main
+    deb-src tor+http://http.debian.net/debian unstable main
 
 Note the use of http.debian.net so that a mirror close to your exit node
 will be automatically chosen.
@@ -39,8 +39,8 @@ will be automatically chosen.
 Alternatively, if you have the Tor hidden service address of a Debian
 mirror, you can use that:
 
-    deb     tor://<long string>.onion/debian unstable main
-    deb-src tor://<long string>.onion/debian unstable main
+    deb     tor+http://<long string>.onion/debian unstable main
+    deb-src tor+http://<long string>.onion/debian unstable main
 
 ## Configuration
 
