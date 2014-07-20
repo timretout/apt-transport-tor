@@ -1,6 +1,7 @@
-AC_INIT([apt-transport-tor], [0.1], [diocles@debian.org])
+AC_INIT([apt-transport-tor], [0.2.1], [diocles@debian.org])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_PROG_CXX
+AC_PROG_LN_S
 AC_CONFIG_HEADERS([config.h])
 AC_CHECK_LIB([apt-pkg], [main])
 AC_CHECK_LIB([curl], [curl_version])
