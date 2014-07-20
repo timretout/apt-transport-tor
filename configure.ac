@@ -1,4 +1,4 @@
-AC_INIT([apt-transport-tor], [0.1], [diocles@debian.org])
+AC_INIT([apt-transport-tor], [0.2], [diocles@debian.org])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_PROG_CXX
 AC_PROG_LN_S
