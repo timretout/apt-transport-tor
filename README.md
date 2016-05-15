@@ -9,7 +9,6 @@ with "tor+http://" or "tor+https://" in your sources.list.
 
 ### Via apt
 
-This package will soon be available in Debian:
 
     apt-get install apt-transport-tor
 
