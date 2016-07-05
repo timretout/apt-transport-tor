@@ -29,10 +29,10 @@ Then, or if installing from a tarball:
 Edit your /etc/apt/sources.list like so, adjusting the suite/components
 appropriately for your system:
 
-    deb     tor+http://http.debian.net/debian unstable main
-    deb-src tor+http://http.debian.net/debian unstable main
+    deb     tor+http://httpredir.debian.org/debian unstable main
+    deb-src tor+http://httpredir.debian.org/debian unstable main
 
-Note the use of http.debian.net so that a mirror close to your exit node
+Note the use of httpredir.debian.org so that a mirror close to your exit node
 will be automatically chosen.
 
 Alternatively, if you have the Tor hidden service address of a Debian
